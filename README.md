@@ -2,7 +2,7 @@
 Explanation of the DCI Project and the source code of the smart contracts that control XIC's behavior.
 
 # Useful Links
-To learn more about DCI, our coin, XIC, and how to participate in the crowdsale, visit our website: digitalcurrencyindex.io
+To learn more about DCI, our coin, XIC, and how to participate in the crowdsale, visit our website: https://www.digitalcurrencyindex.io
 
 To ask questions or interact with the DCI team, visit our reddit page: https://www.reddit.com/r/DigitalCurrencyIndex/
 
