@@ -6,7 +6,7 @@ To learn more about DCI, our coin, XIC, and how to participate in the crowdsale,
 
 To ask questions or interact with the DCI team, visit our reddit page: https://www.reddit.com/r/DigitalCurrencyIndex/
 
-Follow us on Social Media: https://www.facebook.com/digitalcurrencyindex/ , 
+Follow us on Social Media: https://www.facebook.com/digitalcurrencyindex/ , https://twitter.com/DCI_Updates
 
 # The Crowdsale
 Just so this is not left for the code to explain itself, the crowdsale will be executed as follows:
