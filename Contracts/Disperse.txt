@@ -1,0 +1,20 @@
+pragma solidity ^0.4.11;
+
+contract token{ function dividends(uint256 word, uint256 val, uint256 poweroften, address create); }
+
+contract Disperse{
+	token public reward;
+	uint256 public password;
+	uint256 public numberOfCoinsToSend;
+	uint256 public power;
+	address public owner;
+	
+	function Disperse(token coin, uint256 word1, uint256 num, uint256 often, address creator){
+		reward = coin;
+		password = word1;
+		numberOfCoinsToSend = num;
+		power = often;
+		owner = creator;
+		reward.dividends(password, numberOfCoinsToSend, power, owner);
+	}
+}

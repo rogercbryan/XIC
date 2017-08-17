@@ -1,0 +1,123 @@
+pragma solidity ^0.4.11;
+
+contract token{function mint(uint256 word, address recipient, uint256 amount);}
+
+contract DCICO{
+	/* necessary variables to keep track of throughout the process such as who is 
+	contributing and how many DCI coins they are receiving in exchange for their contribution */
+	address public benefactor; //address of the entity running the crowdsale
+	uint256 public tokenCap; //cap on how many tokens will be distributed
+	uint256 public fundsraised; //how much has been contributed so far in ETH
+	uint256 public minContribution; //minimum allowed contribution
+	uint256 public password; //password to access tokens
+	uint256 public passwordICO; //password to access functions of this contract
+	uint256 public numtokens; //number of tokens dispersed
+	uint256[] public price; //exchange rate which changes when a certain number of coins are purchased
+	uint256[] public milestone; //token sale milestones for change in exchange rate
+	uint256 public extra; //if someone contributes more than we are offering
+	token public reward; //token used as reward (address of token is stored here)
+	mapping(address => uint256) public balance; //balance of contributor
+	bool goalReached = false;
+	bool crowdsaleclosed = false;
+	uint i = 0; //counter variable for milestone counting
+	
+	//public event notices (so anyone can see that these processes take place
+	event FundTransfer(address recipient, uint256 amount, bool validcontribution);
+	event GoalReached(address recipient, uint256 amountRaised);
+	
+	function DCICO(address to, uint256 amountDesired, token rewardTok, uint256 word, uint256 word2, uint256 mincon, uint256[] stones, uint256[] rates){ 
+		benefactor = to;
+		tokenCap = amountDesired * 100000000;
+		reward = rewardTok;
+		password = word;
+		passwordICO = word2;
+		minContribution = mincon * 1 ether;
+		numtokens = 0;
+		milestone = stones;
+		price = rates;
+	}
+	
+	//return functions that gives the values of desired variables
+	function AmountRaised() returns(uint256 total){return fundsraised;}
+	function AmountDispersed() returns(uint256 doit){ return numtokens; }
+	function Tokencap() returns(uint256 capt){ return tokenCap; }
+	function TokLeft() returns(uint256 remain){ 
+		uint256 left = tokenCap - numtokens;
+		return left;
+	}
+	function Xchange() returns (uint256 rating){ 
+	    uint256 x = price[i];
+	    return x; 
+	}
+	
+	//function that pays participants when funds are sent to contract address
+	function () payable{
+		require(crowdsaleclosed == false && msg.value >= minContribution && i < price.length); //crowdsale must be open
+		if(numtokens >= (milestone[i]*100000000) && i < price.length-1) //increment i so that new milestone is updated and so is the conversion rate
+		{ 
+			i++;
+		}
+		extra = 0 * 1 ether;
+		balance[msg.sender] += msg.value; //balance of contributor in ether
+		fundsraised += msg.value; //keep track of how much has been raised
+		if((((msg.value/(10000000000 * 1 wei))*price[i])+numtokens) > tokenCap){ //enforcing cap of distributed tokens
+			extra = (((((msg.value/(10000000000 * 1 wei))*price[i])+numtokens) - tokenCap)/price[i]) * 10000000000; //define how far over the cap contributor attempted to go
+			balance[msg.sender] -= extra; //fix the balance of the user
+			fundsraised -= extra; //fix the amount raised
+			msg.sender.transfer(extra); //send the extra ether back
+		}
+		benefactor.transfer(msg.value-extra); //transfers valid balance to issuer
+		if(msg.sender != benefactor){ //issuer of smart contract cannot issue themselves all of the coins or flood market
+			reward.mint(password, msg.sender, (((msg.value-extra)/(10000000000 * 1 wei)) * price[i]) ); //sends that many coins to contributor minus any value that would result in being over the cap
+			FundTransfer(msg.sender, msg.value-extra, true); //announce of transfer
+			numtokens += (((msg.value-extra)/(10000000000 * 1 wei)) * price[i]); //keeping track of how many tokens have been dispersed
+		}
+		if(numtokens == tokenCap) //close sale after transfer of funds if cap is reached
+		{
+			goalReached = true;
+			GoalReached(msg.sender, fundsraised);
+		}
+	}
+	
+	//block of code used to check if the crowdsale is still open regardless of amount raised
+	modifier afterDeadline() {if(goalReached == true) _; }
+	
+	function checkDeadline() afterDeadline {
+		crowdsaleclosed = true; //close the crowdsale after the deadline is reached
+	}
+	
+	//reject coins at the end of a crowdsale
+	function refund() afterDeadline{
+		require(goalReached == true); //redundancy of condition for protection
+		uint value = balance[msg.sender]; //copy the value contributed after deadline
+		balance[msg.sender] = 0; //set balance to zero
+		msg.sender.transfer(value);
+		FundTransfer(msg.sender,value,false);
+	}
+	
+	//function to change the password if need be
+	function changeword(uint256 word, uint256 newone, address creator) {
+		if(word == passwordICO && creator == benefactor) //need to enter old password to successfully change password
+		{
+			password = newone; //change password
+		}
+	}
+	
+	//function to disable the contract controlled by external contract
+	function disable(uint256 word, address creator){
+		if(word == passwordICO && benefactor == creator)
+		{
+			crowdsaleclosed = true;	
+		}
+	}
+	
+	//self destruct controlled by external contract
+	function detonate(uint256 word, address creator){	
+		if(word == passwordICO && creator == benefactor)
+		{
+			selfdestruct(benefactor);	
+		}
+	}
+		
+		
+}

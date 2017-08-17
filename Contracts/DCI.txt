@@ -1,0 +1,177 @@
+pragma solidity ^0.4.11;
+
+contract tokenRecipient{ function receiveApproval(address _from, uint256 _value, address _token, bytes _extraData); }
+
+contract DCI{
+	/* necessary variables for token initiation */
+	string public name;
+	string public symbol;
+	uint256 private password; //password needed to mint new tokens or distribute dividends
+	uint8 public decimals;
+	uint256 public totalsupply; //how many coins are in circulation
+	bool public found;
+	address public owner;
+	
+	/* balance array */
+	mapping(address => uint256) public balance;
+	/* array for approving token transfers.  is this the ledger of transactions? */
+	mapping(address => mapping(address => uint256)) public allowtransfer;
+	
+	//struct to make dynamic array to store addresses of owners of coins
+	struct Add{
+		address[] list;
+	}
+	mapping(address => Add) ListMap; //mapping object for the array above
+	address public forMap; //address for map above
+	
+	/* makes public event notification on the blockchain */
+	event Transfer(address indexed from, address indexed to, uint256 value);
+	
+	/* approval event that i still don't understand */
+	event Approval(address indexed from, address indexed to, uint256 value);
+	
+	/* Constructor to initialize the token */
+	function DCI(uint256 initialsupply, string tokname, uint8 numdecimals, string toksymbol, uint256 word1, address creator){
+		balance[msg.sender] = initialsupply * (100000000);
+		forMap = creator;
+		ListMap[forMap].list.push(msg.sender);
+		totalsupply = initialsupply * (100000000);
+		name = tokname;
+		symbol = toksymbol;
+		decimals = numdecimals;
+		password = word1;
+		found = false;
+	}
+	
+	/* return or stateless functions part of erc20 standard */
+	function totsupply() returns (uint256 tots){return totalsupply;}
+	function balanceOf(address owner) returns (uint256 bal){return balance[owner];}
+	function approvals(address owner, address spender) returns (uint256 allowance){return allowtransfer[owner][spender];}
+	function numholders() returns(uint256 len){ return ListMap[forMap].list.length; }
+	
+	
+	//function that searches for the address of the recipient of tokens to keep track of who has what
+	function ledger(address searchFor) returns(bool){
+		for(uint h = 0; h < ListMap[forMap].list.length; h++)
+		{
+			if(searchFor == ListMap[forMap].list[h]) //if address is found
+			{
+				found = true;
+				return true; //return true
+			}
+		}
+		
+		return false; //otherwise, return false
+	}
+	
+	//function that adds addresses to the ledger
+	function addToLedger(address addition){
+		ListMap[forMap].list.push(addition);
+		found = false;
+	}
+	
+	
+	
+	/* functions for transactions between central distribution account */
+	function transfer(address to, uint256 value) returns (bool success){
+		require(to != 0x0 && balance[msg.sender]>=value  && balance[to]+(value) > balance[to]); // don't send money to a null address, balance must be greater than amount sent, overflow protection
+		balance[msg.sender] -= value; //subtract sender balance
+		balance[to] += value; //add recipient balance
+		ledger(to); //see if user is new to currency
+		if(found == false)
+		{
+			addToLedger(to); //if so, add to list of holders
+		}
+		if(found == true)
+		{
+			found = false; //if not, reset bool var
+		}
+		Transfer(msg.sender, to, value); //alert network of activity
+		return true;
+	}
+	
+	//function that allows for tokens to be sent by others
+	function approve(address spender, uint256 value) returns (bool success){
+		allowtransfer[msg.sender][spender] = value;
+		return true;
+	}
+	
+	function approveandcall(address spender, uint256 value, bytes extra) returns (bool success){
+		tokenRecipient newspender = tokenRecipient(spender);
+		if(approve(spender, value)){
+			newspender.receiveApproval(msg.sender, value, this, extra);
+			Approval(msg.sender, spender, value);
+			return true;
+		}
+	}
+	
+	// function for transfer between two external parties
+	function transferFrom(address from, address to, uint256 value) returns (bool success){
+		require(to != 0x0 && balance[msg.sender]>=value && balance[to]+ (value) > balance[to] && allowtransfer[from][msg.sender] >= value * (100000000)); // don't send money to a null address, balance must be greater than amount sent, overflow protection
+		allowtransfer[from][msg.sender] -= value;
+		balance[from] -= value;
+		balance[to] += value;
+		ledger(to); //see if user is new to currency
+		if(found == false)
+		{
+			addToLedger(to); //if so, add to list of holders
+		}
+		if(found == true)
+		{
+			found = false; //if not, reset bool var
+		}
+		Transfer(from, to, value);
+		return true;
+	}
+	
+	//mint function for ICO, need the password to access this function
+	function mint(uint256 word, address recipient, uint256 amount)
+	{
+		if(word == password)
+		{
+			balance[recipient] += amount; //increase the balance of the participant
+			ledger(recipient); //determine if recipient is new to the currency
+			if(found == false)
+			{
+				addToLedger(recipient); //if not found in list, add them to list
+			}
+			if(found == true)
+			{
+				found = false; //if true, do nothing but reset bool var
+			}
+			totalsupply += amount; //increase the total supply of tokens
+			Transfer(msg.sender, recipient, amount); //alert of transaction
+		}
+	}
+	
+	//function to change the password if need be
+	function changeword(uint256 word, uint256 newone, address creator) {
+		if(word == password && forMap == creator) //need to enter old password to successfully change password
+		{
+			password = newone; //change password
+		}
+	}
+	
+	//function to issue dividends in the future
+	function dividends(uint256 word, uint256 val, uint256 poweroften, address creator){ //val is number of tokens distributed per token owned
+		uint256 number; //number of tokens that will be distributed
+		address user;
+		if(word == password && creator == forMap) //password access to contract
+		{
+			for(uint k = 0; k < ListMap[forMap].list.length; k++)
+			{
+				if(ListMap[forMap].list[k] != forMap) //issuer does not get issued dividends
+				{
+					number = 0;
+					user = ListMap[forMap].list[k]; //variable for user
+					number = (balance[user]*val)/poweroften;
+					mint(word, user, number); //mint new tokens for dividends
+				}
+			}
+		}
+	}
+		
+		
+		
+		
+}
