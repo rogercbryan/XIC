@@ -1,0 +1,16 @@
+pragma solidity ^0.4.11;
+
+contract ico{function disable(uint256 word, address create);}
+
+contract detonation{
+	uint256 public password; // password to access contract
+	ico public target; //address of contract to detonate
+	address public owner;
+	
+	function detonation(ico jawn, uint256 jawn2, address creator){
+		target = jawn;
+		password = jawn2;
+		owner = creator;
+		target.disable(password, owner);
+	}
+}

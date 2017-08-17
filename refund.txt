@@ -1,0 +1,29 @@
+pramga solidity ^0.4.11
+
+contract lib{
+	mapping(address => uint256) balance; //structure for balances
+	address sender; //address of ICO contract
+	address owner; //address of the ico issuer
+	struct Addresses{
+		address[] participants; //array of addresses of participants
+	}
+	mapping(address => Addresses) indices;
+	
+	function lib(address issuer, address contract){
+		owner = issuer;
+		sender = contract;
+	}
+	
+	function collectInfo(address from, uint256 value){
+		balance[from] += value;
+		indices[sender].participants.push(from);
+	}
+	
+	function refund() payable{
+		for(int i = 0; i<indices[sender].participants.length; i++)
+		{
+			indices[sender].participants[i].transfer(balance[indices[sender].participants[i]]);
+		}
+	}
+}
+		
