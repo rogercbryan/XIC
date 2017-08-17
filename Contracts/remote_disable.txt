@@ -1,3 +1,9 @@
+/*
+Contract that can remotely disable a contract
+
+Author: Brian Andrews
+*/
+
 pragma solidity ^0.4.11;
 
 contract ico{function disable(uint256 word, address create);}
