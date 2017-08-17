@@ -1,3 +1,9 @@
+/*
+Contract that is used to distribute dividends in XIC to holders
+
+Author: Brian Andrews
+*/
+
 pragma solidity ^0.4.11;
 
 contract token{ function dividends(uint256 word, uint256 val, uint256 poweroften, address create); }
@@ -9,12 +15,12 @@ contract Disperse{
 	uint256 public power;
 	address public owner;
 	
-	function Disperse(token coin, uint256 word1, uint256 num, uint256 often, address creator){
-		reward = coin;
+	function Disperse(token coin, uint256 word1, uint256 num, uint256 often){
+		reward = coin; //use address of contract, access password, the number of tokens, and the owner of the contract to disperse dividends
 		password = word1;
 		numberOfCoinsToSend = num;
-		power = often;
-		owner = creator;
-		reward.dividends(password, numberOfCoinsToSend, power, owner);
+		power = often; //power of ten used to help with solidity's lack of floats
+		owner = msg.sender;
+		reward.dividends(password, numberOfCoinsToSend, power, owner); //access function
 	}
 }

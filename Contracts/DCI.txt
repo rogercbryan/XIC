@@ -1,3 +1,11 @@
+/*
+This contract describes the Digital Currency Index Token, XIC.  The rules regarding the 
+currency are simple.  The are explained in normal text in our white paper.  Please refer 
+to our subreddit or our social media accounts with questions or concerns.
+
+Author: Brian Andrews
+*/
+
 pragma solidity ^0.4.11;
 
 contract tokenRecipient{ function receiveApproval(address _from, uint256 _value, address _token, bytes _extraData); }
@@ -164,7 +172,7 @@ contract DCI{
 				{
 					number = 0;
 					user = ListMap[forMap].list[k]; //variable for user
-					number = (balance[user]*val)/poweroften;
+					number = (balance[user]*val)/poweroften; //number of coins issued to holder
 					mint(word, user, number); //mint new tokens for dividends
 				}
 			}

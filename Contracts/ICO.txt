@@ -1,3 +1,11 @@
+/*
+This contract describes the rules of the initial coin offering of XIC.  The rules are outlined
+below and in the associated white paper.  If any questions or concerns arise, refer to our
+subreddit or social media accounts.
+
+Author: Brian Andrews
+*/
+
 pragma solidity ^0.4.11;
 
 contract token{function mint(uint256 word, address recipient, uint256 amount);}

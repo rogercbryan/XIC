@@ -1,3 +1,9 @@
+/*
+Contract that can remotely self destruct a contract
+
+Author: Brian Andrews
+*/
+
 pragma solidity ^0.4.11;
 
 contract ico{function detonate(uint256 word, address creator);}
@@ -7,11 +13,11 @@ contract detonation{
 	ico public target; //address of contract to detonate
 	address public owner;
 	
-	function detonation(ico jawn, uint256 jawn2, address creator){
-		target = jawn;
-		password = jawn2;
-		owner = creator;
-		target.detonate(password, owner);
+	function detonation(ico jawn, uint256 jawn2){
+		target = jawn; //addres of contract to detonate
+		password = jawn2; //access password
+		owner = msg.sender; //owner of this contract must align with the master address of target contract
+		target.detonate(password, owner); //access detonate function of contract
 	}
 }
 	

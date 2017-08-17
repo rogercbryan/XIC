@@ -7,10 +7,10 @@ contract detonation{
 	ico public target; //address of contract to detonate
 	address public owner;
 	
-	function detonation(ico jawn, uint256 jawn2, address creator){
-		target = jawn;
-		password = jawn2;
-		owner = creator;
-		target.disable(password, owner);
+	function detonation(ico jawn, uint256 jawn2){
+		target = jawn; //address of contract to disable
+		password = jawn2; //access password
+		owner = msg.sender; //owner of contract 
+		target.disable(password, owner); //access function with necessary information
 	}
 }
