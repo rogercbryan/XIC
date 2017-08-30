@@ -11,7 +11,7 @@ Follow us on Social Media: https://www.facebook.com/digitalcurrencyindex/ , http
 # The Crowdsale
 Just so this is not left for the code to explain itself, the crowdsale will be executed as follows:
 
-This will be a block-based coin issue.  Each block has it's own exchange rate of ETH to XIC and the price per XIC goes up in each new block.  For a block to be completed, all coins allocated to that block must be distributed to participants.  There is a minimum contribution of 1 ETH for this crowdsale and this is the only digital currency we will be accepting at this time.  This is a capped crowdsale and our cap is 180,000,000 XIC. We are planning to include dividends into the system but have not fully developed the rules for such a component yet.  
+This will be a block-based coin issue.  Each block has it's own exchange rate of ETH to XIC and the price per XIC goes up in each new block.  For a block to be completed, all coins allocated to that block must be distributed to participants.  There is a minimum contribution of 1 ETH for this crowdsale and this is the only digital currency we will be accepting at this time.  This is a capped crowdsale and our cap is 160,000,000 XIC. We will also be issuing dividends on a yearly schedule.
 
 We have the ability to self destruct the crowdsale contract at any time if we feel we are being attacked or if something goes terribly wrong with the code.  Our mint functions and contracts utilize password protection for sensitive functions to help avoid attacks.  We also have the ability to also change these passwords at any given time if we feel there might be a threat to our system.  Our goal is to protect our investors and their ability to participate in our project.
 
