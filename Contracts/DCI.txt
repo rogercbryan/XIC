@@ -19,6 +19,7 @@ contract DCI{
 	uint256 public totalsupply; //how many coins are in circulation
 	bool public found;
 	address public owner;
+	uint256 public supplylimit; //global limit on number of allowed tokens
 	
 	/* balance array */
 	mapping(address => uint256) public balance;
@@ -39,7 +40,7 @@ contract DCI{
 	event Approval(address indexed from, address indexed to, uint256 value);
 	
 	/* Constructor to initialize the token */
-	function DCI(uint256 initialsupply, string tokname, uint8 numdecimals, string toksymbol, uint256 word1, address creator){
+	function DCI(uint256 initialsupply, string tokname, uint8 numdecimals, string toksymbol, uint256 word1, address creator, uint256 slimit){
 		balance[msg.sender] = initialsupply * (100000000);
 		forMap = creator;
 		ListMap[forMap].list.push(msg.sender);
@@ -49,13 +50,14 @@ contract DCI{
 		decimals = numdecimals;
 		password = word1;
 		found = false;
+		supplylimit = slimit * 100000000;
 	}
 	
 	/* return or stateless functions part of erc20 standard */
-	function totsupply() returns (uint256 tots){return totalsupply;}
-	function balanceOf(address owner) returns (uint256 bal){return balance[owner];}
-	function approvals(address owner, address spender) returns (uint256 allowance){return allowtransfer[owner][spender];}
-	function numholders() returns(uint256 len){ return ListMap[forMap].list.length; }
+	function totsupply() returns (uint256){return totalsupply;}
+	function balanceOf(address own) returns (uint256){return balance[own];}
+	function approvals(address own1, address spender) returns (uint256){return allowtransfer[own1][spender];}
+	function numholders() returns(uint256){ return ListMap[forMap].list.length; }
 	
 	
 	//function that searches for the address of the recipient of tokens to keep track of who has what
@@ -135,7 +137,7 @@ contract DCI{
 	//mint function for ICO, need the password to access this function
 	function mint(uint256 word, address recipient, uint256 amount)
 	{
-		if(word == password)
+		if(word == password && totalsupply + amount <= supplylimit) //need the right password and enforce the upper limit of XIC
 		{
 			balance[recipient] += amount; //increase the balance of the participant
 			ledger(recipient); //determine if recipient is new to the currency

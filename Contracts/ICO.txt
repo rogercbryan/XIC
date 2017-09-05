@@ -6,32 +6,41 @@ subreddit or social media accounts.
 Author: Brian Andrews
 */
 
-pragma solidity ^0.4.11;
+pragma solidity ^0.4.0;
+import "github.com/oraclize/ethereum-api/oraclizeAPI.sol";
 
 contract token{function mint(uint256 word, address recipient, uint256 amount);}
 
-contract DCICO{
+contract DCICO is usingOraclize{
 	/* necessary variables to keep track of throughout the process such as who is 
 	contributing and how many DCI coins they are receiving in exchange for their contribution */
 	address public benefactor; //address of the entity running the crowdsale
 	uint256 public tokenCap; //cap on how many tokens will be distributed
-	uint256 public fundsraised; //how much has been contributed so far in ETH
+	uint256 public fundsraised=0; //how much has been contributed so far in ETH
 	uint256 public minContribution; //minimum allowed contribution
 	uint256 public password; //password to access tokens
 	uint256 public passwordICO; //password to access functions of this contract
 	uint256 public numtokens; //number of tokens dispersed
-	uint256[] public price; //exchange rate which changes when a certain number of coins are purchased
+	uint256[] public price; //exchange rate $ -> XIC which changes when a certain number of coins are purchased
+	uint256 transactionAmount; //number of tokens to be distributed
 	uint256[] public milestone; //token sale milestones for change in exchange rate
+	address public receive; //recipient address for tokens
+	uint256 public trans; //number of ether sent by contributor
 	uint256 public extra; //if someone contributes more than we are offering
 	token public reward; //token used as reward (address of token is stored here)
-	mapping(address => uint256) public balance; //balance of contributor
+	mapping(address => uint256) public balances; //balance of contributor
 	bool goalReached = false;
 	bool crowdsaleclosed = false;
 	uint i = 0; //counter variable for milestone counting
 	
+	string public ethUSD; //string that will store the info collected from oraclize
+	uint256 public EthUsd; //integer
+	
 	//public event notices (so anyone can see that these processes take place
 	event FundTransfer(address recipient, uint256 amount, bool validcontribution);
 	event GoalReached(address recipient, uint256 amountRaised);
+	event newOraclizeQuery(string description);
+	event newPrice(string ex);
 	
 	function DCICO(address to, uint256 amountDesired, token rewardTok, uint256 word, uint256 word2, uint256 mincon, uint256[] stones, uint256[] rates){ 
 		benefactor = to;
@@ -43,52 +52,95 @@ contract DCICO{
 		numtokens = 0;
 		milestone = stones;
 		price = rates;
+		oraclize_setProof(proofType_TLSNotary | proofStorage_IPFS);
+		oraclize_setCustomGasPrice(4000000000 wei);
 	}
 	
 	//return functions that gives the values of desired variables
-	function AmountRaised() returns(uint256 total){return fundsraised;}
-	function AmountDispersed() returns(uint256 doit){ return numtokens; }
-	function Tokencap() returns(uint256 capt){ return tokenCap; }
-	function TokLeft() returns(uint256 remain){ 
+	function AmountRaised() returns(uint256){return fundsraised;}
+	function AmountDispersed() returns(uint256){ return numtokens; }
+	function Tokencap() returns(uint256){ return tokenCap; }
+	function TokLeft() returns(uint256){ 
 		uint256 left = tokenCap - numtokens;
 		return left;
 	}
-	function Xchange() returns (uint256 rating){ 
+	function Xchange() returns (uint256){ 
 	    uint256 x = price[i];
 	    return x; 
 	}
 	
-	//function that pays participants when funds are sent to contract address
-	function () payable{
-		require(crowdsaleclosed == false && msg.value >= minContribution && i < price.length); //crowdsale must be open
-		if(numtokens >= (milestone[i]*100000000) && i < price.length-1) //increment i so that new milestone is updated and so is the conversion rate
+	//function to convert api string output to an uint256 type
+	function stringToUint(string s) constant returns (uint256 result) {
+        bytes memory b = bytes(s);
+        uint j;
+        result = 0;
+        for (j = 0; j < b.length; j++) {
+            uint c = uint(b[j]);
+            if (c >= 48 && c <= 57) {
+                result = result * 10 + (c - 48);
+            }
+        }
+    }
+	
+	//function that transfers funds to all involved parties, controls exchange rates, and enforces cap rules of sale
+	function sendtok() payable{
+	    if(numtokens >= (milestone[i]*100000000) && i < price.length-1) //increment i so that new milestone is updated and so is the conversion rate
 		{ 
-			i++;
+		    while(numtokens >= (milestone[i]*100000000)){
+			    i++;}
 		}
-		extra = 0 * 1 ether;
-		balance[msg.sender] += msg.value; //balance of contributor in ether
-		fundsraised += msg.value; //keep track of how much has been raised
-		if((((msg.value/(10000000000 * 1 wei))*price[i])+numtokens) > tokenCap){ //enforcing cap of distributed tokens
-			extra = (((((msg.value/(10000000000 * 1 wei))*price[i])+numtokens) - tokenCap)/price[i]) * 10000000000; //define how far over the cap contributor attempted to go
-			balance[msg.sender] -= extra; //fix the balance of the user
+		extra = 0;
+	    transactionAmount = (((EthUsd*100000)/price[i])*trans)/(1 ether); //number of tokens to be sent
+	    if((transactionAmount+numtokens) > tokenCap){ //enforcing cap of distributed tokens
+	        extra = ((((transactionAmount+numtokens) - tokenCap)*price[i])/(EthUsd))*10000000000000; //define how far over the cap contributor attempted to go in ETH
+			transactionAmount -= ((transactionAmount+numtokens) - tokenCap); //reduce amount of XIC accordingly
+			balances[receive] -= extra; //fix the balance of the user
 			fundsraised -= extra; //fix the amount raised
-			msg.sender.transfer(extra); //send the extra ether back
-		}
-		benefactor.transfer(msg.value-extra); //transfers valid balance to issuer
-		if(msg.sender != benefactor){ //issuer of smart contract cannot issue themselves all of the coins or flood market
-			reward.mint(password, msg.sender, (((msg.value-extra)/(10000000000 * 1 wei)) * price[i]) ); //sends that many coins to contributor minus any value that would result in being over the cap
-			FundTransfer(msg.sender, msg.value-extra, true); //announce of transfer
-			numtokens += (((msg.value-extra)/(10000000000 * 1 wei)) * price[i]); //keeping track of how many tokens have been dispersed
-		}
-		if(numtokens == tokenCap) //close sale after transfer of funds if cap is reached
-		{
+			receive.transfer(extra); //send the extra ether back
 			goalReached = true;
 			GoalReached(msg.sender, fundsraised);
+			crowdsaleclosed = true; //redundant with below but makes sure ICO closes if the cap has been breached
 		}
+	    if(receive != benefactor){ //issuer of contract can not arbitrarily flood that market with coins
+	        reward.mint(password, receive, transactionAmount); //sends that many coins to contributor minus any value that would result in being over the cap
+	        FundTransfer(receive, trans-extra, true); //announce of transfer
+			numtokens += transactionAmount; //keeping track of how many tokens have been dispersed
+		}
+	    benefactor.transfer(this.balance); //send the issuer the ETH still in the contract
+	    
+	}
+	
+	//api callback function, reports the usd/eth exchange rate
+	function __callback(bytes32 myid, string result, bytes proof) {
+        if(msg.sender != oraclize_cbAddress()) throw;
+        ethUSD = result;
+		newPrice(ethUSD);
+		EthUsd = stringToUint(ethUSD);
+		sendtok();
+    }
+	
+	//fallback function that calls for the query and makes sure the sale is still open, that a contributor sends enough
+	function() payable{
+		require(crowdsaleclosed == false /*&& msg.value >= minContribution*/ && i < price.length); //crowdsale must be open
+		receive = msg.sender;
+        trans = msg.value;
+		balances[receive] += trans; //balance of contributor in ether
+		fundsraised += trans; //keep track of how much has been raised
+		if (oraclize.getPrice("URL") > this.balance) { //calling for the query.  THIS COSTS ETH, but DCI incurs the cost and the full balance paid is considered when calculating the number of XIC a contributor receives
+            newOraclizeQuery("Oraclize query was NOT sent, please add some ETH to cover for the query fee");
+        }  //The block of code above should never run because it never takes >= 1 ETH to get the query.  Just there as a contingency.
+		else {
+			
+            newOraclizeQuery("Oraclize query was sent, standing by for the answer..");
+            oraclize_query("URL", "json(https://api.kraken.com/0/public/Ticker?pair=ETHUSD).result.XETHZUSD.c.0", 700000); //source of ETH price in USD and the gas limit that will be used when the callback function is called
+        }
 	}
 	
 	//block of code used to check if the crowdsale is still open regardless of amount raised
-	modifier afterDeadline() {if(goalReached == true) _; }
+	modifier afterDeadline() {
+	    if(goalReached == true) _;
+	    
+	}
 	
 	function checkDeadline() afterDeadline {
 		crowdsaleclosed = true; //close the crowdsale after the deadline is reached
@@ -97,8 +149,8 @@ contract DCICO{
 	//reject coins at the end of a crowdsale
 	function refund() afterDeadline{
 		require(goalReached == true); //redundancy of condition for protection
-		uint value = balance[msg.sender]; //copy the value contributed after deadline
-		balance[msg.sender] = 0; //set balance to zero
+		uint value = balances[msg.sender]; //copy the value contributed after deadline
+		balances[msg.sender] = 0; //set balance to zero
 		msg.sender.transfer(value);
 		FundTransfer(msg.sender,value,false);
 	}
