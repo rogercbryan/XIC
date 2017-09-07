@@ -1,4 +1,4 @@
-# ICO Contract Address:  0x2bd30ed890b349ea6152cccf93d4b3c52a26051d
+# ICO Contract Address:  0xf2e5a8c518092ad97a14d877e6376837a561e2c9
 
 # XIC
 Explanation of the DCI Project and the source code of the smart contracts that control XIC's behavior.  More detail is provided in the white paper than below, but a short overview of our project is presented here as well.  
