@@ -54,7 +54,9 @@ contract DCI{
 	}
 	
 	/* return or stateless functions part of erc20 standard */
-	function totsupply() returns (uint256){return totalsupply;}
+	function totalSupply() constant returns (uint256 totalSupply){
+	    totalSupply = totalsupply;
+	}
 	function balanceOf(address own) returns (uint256){return balance[own];}
 	function approvals(address own1, address spender) returns (uint256){return allowtransfer[own1][spender];}
 	function numholders() returns(uint256){ return ListMap[forMap].list.length; }
